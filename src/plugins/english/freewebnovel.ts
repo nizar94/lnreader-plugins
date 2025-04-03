@@ -7,8 +7,15 @@ class FreeWebNovel implements Plugin.PluginBase {
   id = 'FWN.com';
   name = 'Free Web Novel';
   site = 'https://freewebnovel.com/';
-  version = '1.1.0';
+  version = '1.1.3';
   icon = 'src/en/freewebnovel/icon.png';
+
+  lastSearch: number | null = null;
+  searchInterval = 3400;
+
+  async sleep(ms: number) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
 
   async getCheerio(url: string): Promise<CheerioAPI> {
     const r = await fetchApi(url);
@@ -115,24 +122,25 @@ class FreeWebNovel implements Plugin.PluginBase {
       loadedCheerio('div.txt').find('p:last-child').remove();
 
     const chapterText = loadedCheerio('div.txt').html() || '';
-    return chapterText
-      .replace(
-        /<p>\s*(?:(?:This (?:chapter is updated by|content is taken from)|Follow current novels on|Updated from) )?(?:[ƒfF][Rrɾг][Eēeё][Eēёe][Wwω][Eёēe][Bbɓ][Nnɳη][Oø૦ѳσo][Vѵv][Eёeē][LlℓɭI\|]\.\s?[Cƈcç][O૦σøoѳ][M๓ɱm]|ꜰʀᴇᴇᴡᴇʙɴᴏᴠᴇʟ)\.?/g,
-        '<p>',
-      )
-      .replace(/<p>\s*Visit for the best novel reading experience\.?/g, '<p>');
+    return chapterText.replace(
+      />([^<\.]+?\.)?[^\.<]*?\b[ƒfF][Rrɾг][Eēeё]+[Wwω𝑤]+[Eёēe][Bbɓ][Nnɳη][Oø૦ѳσo][Vѵνv][Eёeē][^<]*/g,
+      '>$1',
+    );
   }
 
   async searchNovels(searchTerm: string): Promise<Plugin.NovelItem[]> {
-    const r = await fetchApi(this.site + 'search/', {
+    const now = Date.now();
+    if (this.lastSearch && now - this.lastSearch <= this.searchInterval) {
+      await this.sleep(this.searchInterval);
+    }
+    const r = await fetchApi(this.site + 'search', {
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
-        Referer: this.site,
-        Origin: this.site,
       },
       method: 'POST',
       body: new URLSearchParams({ searchkey: searchTerm }).toString(),
     });
+    this.lastSearch = Date.now();
     if (!r.ok)
       throw new Error(
         'Could not reach site (' + r.status + ') try to open in webview.',

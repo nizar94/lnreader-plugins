@@ -1,12 +1,12 @@
 [
   {
     "id": "boxnovel",
-    "sourceSite": "https://boxnovel.com/",
+    "sourceSite": "https://novgo.co/",
     "sourceName": "BoxNovel",
     "options": {
       "useNewChapterEndpoint": true,
-      "customJs": "chapterText.find('.cha-tit > div').remove()",
-      "versionIncrements": 2
+      "customJs": "chapterText.find('div:has(a)').remove()",
+      "versionIncrements": 6
     }
   },
   {
@@ -80,11 +80,12 @@
   },
   {
     "id": "meionovel",
-    "sourceSite": "https://meionovel.id/",
+    "sourceSite": "https://meionovels.com/",
     "sourceName": "MeioNovel",
     "options": {
       "useNewChapterEndpoint": true,
-      "lang": "Indonesian"
+      "lang": "Indonesian",
+      "versionIncrements": 1
     }
   },
   {
@@ -197,7 +198,9 @@
     "id": "zetroTL",
     "sourceSite": "https://zetrotranslation.com/",
     "sourceName": "Zetro Translation",
-    "options": {}
+    "options": {
+      "hasLocked": true
+    }
   },
   {
     "id": "webnoveloku",
@@ -396,15 +399,6 @@
     }
   },
   {
-    "id": "fenrir",
-    "sourceSite": "https://fenrirtranslations.com/",
-    "sourceName": "Fenrir Translations",
-    "options": {
-      "useNewChapterEndpoint": true,
-      "lang": "English"
-    }
-  },
-  {
     "id": "bellereservoir",
     "sourceSite": "https://bellereservoir.com/",
     "sourceName": "Belle Reservoir",
@@ -505,12 +499,47 @@
   },
   {
     "id": "fortuneeternal",
-    "sourceSite": "https://fortuneeternal.com",
+    "sourceSite": "https://www.fortuneeternal.com",
     "sourceName": "Fortune Eternal",
     "options": {
       "lang": "Korean",
       "useNewChapterEndpoint": true,
-      "versionIncrements": 1
+      "versionIncrements": 2
+    }
+  },
+  {
+    "id": "ragnarscans",
+    "sourceSite": "https://ragnarscans.com/",
+    "sourceName": "Ragnar Scans",
+    "options": {
+      "lang": "Turkish",
+      "useNewChapterEndpoint": true
+    }
+  },
+  {
+    "id": "readfanfic",
+    "sourceSite": "https://readfanfic.com/",
+    "sourceName": "Read Fanfic",
+    "options": {
+      "lang": "English"
+    }
+  },
+  {
+    "id": "violetlily",
+    "sourceSite": "https://violetlilytranslation.com/",
+    "sourceName": "Violet Lily",
+    "options": {
+      "lang": "English",
+      "useNewChapterEndpoint": true
+    }
+  },
+  {
+    "id": "sweetescape",
+    "sourceSite": "https://sweetescapetranslations.com/",
+    "sourceName": "Sweet Escape",
+    "options": {
+      "lang": "English",
+      "useNewChapterEndpoint": true
     }
   }
 ]

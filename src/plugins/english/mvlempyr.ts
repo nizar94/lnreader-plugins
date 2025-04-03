@@ -29,9 +29,9 @@ class MVLEMPYRPlugin implements Plugin.PluginBase {
   name = 'MVLEMPYR';
   icon = 'src/en/mvlempyr/icon.png';
   site = 'https://www.mvlempyr.com/';
-  version = '1.0.3';
+  version = '1.0.7';
 
-  _chapSite = 'https://chp.mvlempyr.net/';
+  _chapSite = 'https://chap.mvlempyr.space/';
   _allNovels: (Plugin.NovelItem & ExtraNovelData)[] | undefined;
   _allNovelsPromise: Promise<(Plugin.NovelItem & ExtraNovelData)[]> | undefined;
 
@@ -99,7 +99,7 @@ class MVLEMPYRPlugin implements Plugin.PluginBase {
       ret.push(this.parseNovelHtmlNew(realNovelInfo));
     }
 
-    console.log(ret);
+    // console.log(ret);
     return ret;
   }
 
@@ -294,6 +294,19 @@ class MVLEMPYRPlugin implements Plugin.PluginBase {
     return this.parseNovels(loadedCheerio, nextPageConsumer);
   }
 
+  convertNovelId(e: bigint) {
+    let t = 1999999997n;
+    let u = 1n,
+      c = 7n % t,
+      d = e;
+    for (
+      ;
+      d > 0;
+      (1n & d) === 1n && (u = (u * c) % t), c = (c * c) % t, d >>= 1n
+    );
+    return u;
+  }
+
   async parseNovel(novelPath: string): Promise<Plugin.SourceNovel> {
     const url = this.site + novelPath;
     const result = await fetchApi(url);
@@ -304,25 +317,33 @@ class MVLEMPYRPlugin implements Plugin.PluginBase {
     this.checkCaptcha(loadedCheerio);
 
     const code = loadedCheerio('#novel-code').text();
-    const tags = (
-      await fetchApi(this._chapSite + 'wp-json/wp/v2/tags?slug=' + code, {
+    const newNovelId = this.convertNovelId(BigInt(parseInt(code)));
+    const firstPostsReq = await fetchApi(
+      this._chapSite +
+        'wp-json/wp/v2/posts?tags=' +
+        newNovelId +
+        '&per_page=500&page=1',
+      {
         headers: {
           origin2: this.site.replace(/\/$/, ''),
           origin: this.site.replace(/\/$/, ''),
         },
-      }).then(res => res.json())
-    )[0];
+      },
+    );
 
-    const posts = (
-      await Promise.all(
-        new Array(Math.ceil(tags.count / 500))
+    const pages = parseInt(firstPostsReq.headers.get('x-wp-totalpages'));
+
+    const posts = [
+      await firstPostsReq.json(),
+      ...(await Promise.all(
+        new Array(pages - 1)
           .fill(0)
-          .map((_, i) => i + 1)
+          .map((_, i) => i + 2)
           .map(page =>
             fetchApi(
               this._chapSite +
                 'wp-json/wp/v2/posts?tags=' +
-                tags.id +
+                newNovelId +
                 '&per_page=500&page=' +
                 page,
               {
@@ -333,27 +354,37 @@ class MVLEMPYRPlugin implements Plugin.PluginBase {
               },
             ).then(res => res.json()),
           ),
-      )
-    )
-      .flat()
-      .sort((a, b) => a.acf.chapter_number - b.acf.chapter_number);
+      )),
+    ].flat();
 
     return {
       path: novelPath,
       name:
-        loadedCheerio('div.image-container.w-embed > img').attr('alt') ||
-        'Untitled',
-      cover: loadedCheerio('div.image-container.w-embed > img').attr('src'),
-      summary: loadedCheerio('div.synopsis.w-richtext').text().trim(),
-      chapters: posts.map(chap => ({
-        name: chap.acf.ch_name,
-        path: 'chapter/' + chap.acf.novel_code + '-' + chap.acf.chapter_number,
-        releaseTime: chap.date,
-        chapterNumber: chap.acf.chapter_number,
-      })),
-      status: loadedCheerio('div.novelstatustextmedium').text(),
-      author: loadedCheerio('div.mobileauthorname').text(),
-      genres: loadedCheerio('div.novelgenre.mobile > div > div > a > div')
+        loadedCheerio(
+          '.novelpaewrapper div.image-container.w-embed > img',
+        ).attr('alt') || 'Untitled',
+      cover: loadedCheerio(
+        '.novelpaewrapper div.image-container.w-embed > img',
+      ).attr('src'),
+      summary: loadedCheerio('.novelpaewrapper div.synopsis.w-richtext')
+        .text()
+        .trim(),
+      chapters: posts
+        .map(chap => ({
+          name: chap.acf.ch_name,
+          path:
+            'chapter/' + chap.acf.novel_code + '-' + chap.acf.chapter_number,
+          releaseTime: chap.date,
+          chapterNumber: chap.acf.chapter_number,
+        }))
+        .reverse(),
+      status: loadedCheerio(
+        '.novelpaewrapper div.novelstatustextmedium',
+      ).text(),
+      author: loadedCheerio('.novelpaewrapper div.mobileauthorname').text(),
+      genres: loadedCheerio(
+        '.novelpaewrapper div.novelgenre.mobile > div > div > a > div',
+      )
         .map((i, el) => loadedCheerio(el).text())
         .toArray()
         .join(','),
@@ -361,7 +392,7 @@ class MVLEMPYRPlugin implements Plugin.PluginBase {
   }
 
   async parseChapter(chapterPath: string): Promise<string> {
-    const result = await fetchApi(this._chapSite + chapterPath);
+    const result = await fetchApi(this.site + chapterPath);
     const body = await result.text();
 
     const loadedCheerio = parseHTML(body);
